@@ -48,6 +48,12 @@ struct LandmarkObs {
   double y;   // Local (vehicle coords) y position of landmark observation [m]
 };
 
+/**
+ * Computes a 2-dimensional normal distribution function.
+ * @param (x1,y1) x and y coordinates of the mean
+ * @param (x2,y2) x and y coordinates of the point of interest
+ * @output (sigma_x,sigma_y) standard deviation in x and y coordinates
+ */
 inline double normal(double x1, double y1, double x2, double y2, double sigma_x, double sigma_y)
 {
     return 1.0 / (2.0 * M_PI * sigma_x * sigma_y) * exp(
