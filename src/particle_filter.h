@@ -28,11 +28,10 @@ class ParticleFilter {
 public:
     // Constructor
     // @param num_particles Number of particles
-    ParticleFilter()
-        :num_particles(0), is_initialized(false) { }
+    ParticleFilter() = default;
 
     // Destructor
-    virtual ~ParticleFilter() { }
+    virtual ~ParticleFilter() = default;
 
     /**
      * init Initializes particle filter by initializing particles to Gaussian
@@ -98,9 +97,9 @@ public:
     /**
      * initialized Returns whether particle filter is initialized yet or not.
      */
-    const bool initialized() const
+    bool initialized() const
     {
-        return is_initialized;
+        return !particles.empty();
     }
 
     /**
@@ -113,11 +112,6 @@ public:
     std::vector<Particle> particles;
 
 private:
-    // Number of particles to draw
-    int num_particles;
-
-    // Flag, if filter is initialized
-    bool is_initialized;
 
     // Vector of weights of all particles
     std::vector<double> weights;

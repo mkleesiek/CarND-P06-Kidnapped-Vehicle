@@ -20,6 +20,12 @@
 
 using std::string;
 using std::vector;
+using std::normal_distribution;
+using std::default_random_engine;
+
+constexpr double epsilon = 1E-7;
+
+static default_random_engine gen;
 
 void ParticleFilter::init(double x, double y, double theta, double std[])
 {
@@ -31,8 +37,21 @@ void ParticleFilter::init(double x, double y, double theta, double std[])
      * NOTE: Consult particle_filter.h for more information about this method
      *   (and others in this file).
      */
-    num_particles = 0;  // TODO: Set the number of particles
 
+    size_t num_particles = 10000;
+
+    normal_distribution<double> dist_x(x, std[0]);
+    normal_distribution<double> dist_y(y, std[1]);
+    normal_distribution<double> dist_theta(theta, std[2]);
+
+    particles.resize(num_particles);
+    for (size_t i = 0; i < num_particles; i++) {
+        particles[i].id = i;
+        particles[i].x = dist_x(gen);
+        particles[i].y = dist_y(gen);
+        particles[i].theta = dist_theta(gen);
+        particles[i].weight = 1.0;
+    }
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[],
@@ -46,6 +65,26 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
      *  http://www.cplusplus.com/reference/random/default_random_engine/
      */
 
+     normal_distribution<double> dist_x(0.0, std_pos[0]);
+     normal_distribution<double> dist_y(0.0, std_pos[1]);
+     normal_distribution<double> dist_theta(0.0, std_pos[2]);
+
+     for (Particle& p : particles) {
+
+         if (yaw_rate < epsilon) {
+            p.x += velocity * cos(p.theta) * delta_t;
+	        p.y += velocity * sin(p.theta) * delta_t;
+         }
+         else {
+             p.x += velocity / yaw_rate * (sin( p.theta + yaw_rate*delta_t) - sin(p.theta));
+             p.y += velocity / yaw_rate * (cos(p.theta) - cos( p.theta + yaw_rate*delta_t));
+             p.theta += yaw_rate * delta_t;
+         }
+
+         p.x += dist_x(gen);
+         p.y += dist_y(gen);
+         p.theta += dist_theta(gen);
+     }
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
@@ -59,6 +98,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
      *   probably find it useful to implement this method and use it as a helper
      *   during the updateWeights phase.
      */
+
 
 }
 
