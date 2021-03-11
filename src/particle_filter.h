@@ -27,7 +27,6 @@ struct Particle {
 class ParticleFilter {
 public:
     // Constructor
-    // @param num_particles Number of particles
     ParticleFilter() = default;
 
     // Destructor
