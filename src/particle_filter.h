@@ -102,19 +102,25 @@ public:
         return !particles.empty();
     }
 
+    size_t number_of_particles() const
+    {
+        return particles.size();
+    }
+
+    const std::vector<Particle>& getParticles() const
+    {
+        return particles;
+    }
+
     /**
      * Used for obtaining debugging information related to particles.
      */
     std::string getAssociations(Particle best);
     std::string getSenseCoord(Particle best, std::string coord);
 
+private:
     // Set of current particles
     std::vector<Particle> particles;
-
-private:
-
-    // Vector of weights of all particles
-    std::vector<double> weights;
 };
 
 #endif  // PARTICLE_FILTER_H_

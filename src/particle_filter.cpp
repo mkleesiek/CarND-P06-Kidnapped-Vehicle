@@ -23,6 +23,7 @@ using std::vector;
 using std::numeric_limits;
 using std::normal_distribution;
 using std::default_random_engine;
+using std::discrete_distribution;
 
 constexpr double epsilon = 1E-7;
 
@@ -39,7 +40,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[])
      *   (and others in this file).
      */
 
-    size_t num_particles = 10000;
+    constexpr size_t num_particles = 10000;
 
     normal_distribution<double> dist_x(x, std[0]);
     normal_distribution<double> dist_y(y, std[1]);
@@ -104,7 +105,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
         double min_distance = numeric_limits<double>::max();
 
         for (const LandmarkObs& pred: predicted) {
-            double distance = dist(obs.x, obs.y, pred.x, pred.y);
+            const double distance = dist(obs.x, obs.y, pred.x, pred.y);
             if (distance < min_distance) {
                 min_distance = distance;
                 obs.id = pred.id;
@@ -131,6 +132,42 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
      *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
      */
 
+    for (auto& p: particles) {
+
+        // identify landmarks which are in sensor range of this particle
+        vector<LandmarkObs> landmarks_in_range;
+        for (const auto& lm: map_landmarks.landmark_list) {
+            const double distance = dist(p.x, p.y, lm.x_f, lm.y_f);
+            if (distance <= sensor_range)
+            {
+                landmarks_in_range.push_back(LandmarkObs{lm.id_i, lm.x_f, lm.y_f});
+            }
+        }
+
+        // convert the observations from vehicle to map coordinate system (assuming this particle as reference)
+        vector<LandmarkObs> observations_map;
+
+        for (const auto& obs: observations) {
+            observations_map.push_back({
+                0,
+                obs.x * cos(p.theta) - obs.y * sin(p.theta) + p.x,
+                obs.x * sin(p.theta) + obs.y * cos(p.theta) + p.y
+            });
+        }
+
+        // associate each observation with the closest landmark
+        dataAssociation(landmarks_in_range, observations_map);
+
+        // calculate the particle weight, based on the distance between observations and associated landmark
+        p.weight = 1.0;
+
+        for (const auto& obs: observations_map) {
+            const auto& associated_landmark = map_landmarks.landmark_list.at(obs.id-1);
+            const double w = normal(obs.x, obs.y, associated_landmark.x_f, associated_landmark.y_f, std_landmark[0], std_landmark[1]);
+            p.weight *= w;
+        }
+    }
+
 }
 
 void ParticleFilter::resample()
@@ -142,6 +179,22 @@ void ParticleFilter::resample()
      *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
      */
 
+    vector<double> weights(particles.size(), 0.0);
+    for (size_t i = 0; i < particles.size(); i++) {
+        weights[i] = particles[i].weight;
+    }
+
+    discrete_distribution<> dist(weights.begin(), weights.end());
+
+    vector<Particle> resampled_particles;
+    resampled_particles.resize(number_of_particles());
+
+    for (size_t i = 0; i < resampled_particles.size(); i++) {
+        const size_t idx = dist(gen);
+        resampled_particles[i] = particles[idx];
+    }
+
+    particles = std::move(resampled_particles);
 }
 
 void ParticleFilter::SetAssociations(Particle& particle,
